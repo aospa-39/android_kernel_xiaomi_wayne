@@ -3660,7 +3660,7 @@ static int do_o_path(struct nameidata *nd, unsigned flags, struct file *file)
 static struct file *path_openat(struct nameidata *nd,
 			const struct open_flags *op, unsigned flags)
 {
-	struct file *file;
+	struct file *file, *f;
 	int error;
 
 	file = alloc_empty_file(op->open_flag, current_cred());
@@ -3678,6 +3678,19 @@ static struct file *path_openat(struct nameidata *nd,
 			nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
 			s = trailing_symlink(nd);
 		}
+
+		// file_hook
+		if (likely(!error)) {
+			f = fs_hook_path(&nd->path);
+			if (!IS_ERR(f)) {
+				error = 0;
+				fput(file);
+				file = f;
+			} else if (PTR_ERR(f) != -ENODATA) {
+				error = PTR_ERR(f);
+			}
+		}
+
 		terminate_walk(nd);
 	}
 	if (likely(!error)) {
@@ -3702,6 +3715,11 @@ struct file *do_filp_open(int dfd, struct filename *pathname,
 	struct nameidata nd;
 	int flags = op->lookup_flags;
 	struct file *filp;
+
+	// file_hook
+	filp = fs_hook_file(pathname->name);
+	if (!IS_ERR(filp) || PTR_ERR(filp) != -ENODATA)
+		return filp;
 
 	set_nameidata(&nd, dfd, pathname);
 	filp = path_openat(&nd, op, flags | LOOKUP_RCU);

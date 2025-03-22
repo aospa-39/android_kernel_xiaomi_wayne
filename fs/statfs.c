@@ -173,12 +173,17 @@ static int do_statfs64(struct kstatfs *st, struct statfs64 __user *p)
 	return 0;
 }
 
+extern int fsinfo_patch_statfs(const char __user *upath, struct statfs __user *buf);
+
 SYSCALL_DEFINE2(statfs, const char __user *, pathname, struct statfs __user *, buf)
 {
 	struct kstatfs st;
 	int error = user_statfs(pathname, &st);
 	if (!error)
 		error = do_statfs_native(&st, buf);
+
+	if (!error)
+		error = fsinfo_patch_statfs(pathname, buf);
 	return error;
 }
 

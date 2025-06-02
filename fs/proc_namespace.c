@@ -12,7 +12,7 @@
 #include <linux/security.h>
 #include <linux/fs_struct.h>
 #include <linux/sched/task.h>
-
+#include "linux/vmalloc.h"
 #include "proc/internal.h" /* only for get_proc_task() in ->open() */
 
 #include "pnode.h"
@@ -96,6 +96,11 @@ static void show_type(struct seq_file *m, struct super_block *sb)
 
 static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
 {
+	/* hook show_vfsmnt befor */
+	int start = m->count;
+	int end;
+	int i;
+	char *line;
 	struct proc_mounts *p = m->private;
 	struct mount *r = real_mount(mnt);
 	struct path mnt_path = { .dentry = mnt->mnt_root, .mnt = mnt };
@@ -126,12 +131,30 @@ static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
 	else if (sb->s_op->show_options)
 		err = sb->s_op->show_options(m, mnt_path.dentry);
 	seq_puts(m, " 0 0\n");
+	/* hook show_vfsmnt after */
+	end = m->count;
+	// 检测maps是否符合我们的情况
+	line = vmalloc(end - start + 1);
+	for (i = 0; i < end - start; i++) {
+		line[i] = m->buf[start + i];
+	}
+	line[end - start] = 0;
+	// 字符比较函数
+	if (strstr(line, "/debug_ramdisk") || strstr(line, "/data/adb/modules") || strstr(line, "/data_mirror") || strstr(line, "magisk") || strstr(line, "/sbin") || strstr(line,"ksud")) {
+		m->count = start;
+	}
+	vfree(line);	
 out:
 	return err;
 }
 
 static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
 {
+	/* hook show_mountinfo before: */
+	int start = m->count;
+	int end;
+	int i;
+	char *line;
 	struct proc_mounts *p = m->private;
 	struct mount *r = real_mount(mnt);
 	struct super_block *sb = mnt->mnt_sb;
@@ -190,12 +213,32 @@ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
 	} else if (sb->s_op->show_options)
 		err = sb->s_op->show_options(m, mnt->mnt_root);
 	seq_putc(m, '\n');
+	// hook show_mountinfo after:
+	end = m->count;
+ 	// 检测maps是否符合我们的情况
+ 	line = vmalloc(end - start + 1);
+	for (i = 0; i < end - start; i++) {
+		line[i] = m->buf[start + i];
+	}
+	line[end - start] = 0;
+	// 字符串比较
+	if (strstr(line,"/debug_ramdisk") || strstr(line,"/data/data/modules") || strstr(line,"/data_mirror")
+		|| strstr(line,"magisk") || strstr(line,"/sbin") || strstr(line,"ksud")) {
+			m->count = start;
+	}
+	vfree(line);
 out:
 	return err;
 }
 
 static int show_vfsstat(struct seq_file *m, struct vfsmount *mnt)
 {
+	/* hook show_vfsstat befor */
+	int start = m->count;
+	int end;
+	int i;
+	char *line;
+
 	struct proc_mounts *p = m->private;
 	struct mount *r = real_mount(mnt);
 	struct path mnt_path = { .dentry = mnt->mnt_root, .mnt = mnt };
@@ -235,6 +278,19 @@ static int show_vfsstat(struct seq_file *m, struct vfsmount *mnt)
 	}
 
 	seq_putc(m, '\n');
+	// hook show_mountinfo after:
+	end = m->count;
+	// 检测maps是否符合我们的情况
+	line = vmalloc(end - start + 1);
+	for (i = 0; i < end - start; i++) {
+		line[i] = m->buf[start + i];
+	}
+	line[end - start] = 0;
+	// 字符串比较
+	if (strstr(line,"/debug_ramdisk") || strstr(line,"/data/data/modules") || strstr(line,"/data_mirror")
+		|| strstr(line,"magisk") || strstr(line,"/sbin") || strstr(line,"ksud")) {
+			m->count = start;
+	}
 out:
 	return err;
 }

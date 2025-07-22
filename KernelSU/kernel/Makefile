@@ -26,9 +26,12 @@ ifeq ($(shell grep -q "struct selinux_state " $(srctree)/security/selinux/includ
 ccflags-y += -DKSU_COMPAT_HAS_SELINUX_STATE
 endif
 
-KSU_EXPECTED_SIZE := 0x2e8
-
-KSU_EXPECTED_HASH := 85a458d24c98e2bd1aa9188e08d1568bba37bab0e7cc5c70bef39beb97a39c84
+# Jindun
+# KSU_EXPECTED_SIZE := 0x2e8
+# KSU_EXPECTED_HASH := 85a458d24c98e2bd1aa9188e08d1568bba37bab0e7cc5c70bef39beb97a39c84
+# Zhuque
+KSU_EXPECTED_SIZE := 0x476
+KSU_EXPECTED_HASH := e8f9948fd320cda67820874963306260b604048b93abb0c4fb218cf60cbde8d2
 
 ifdef KSU_MANAGER_PACKAGE
 ccflags-y += -DKSU_MANAGER_PACKAGE=\"$(KSU_MANAGER_PACKAGE)\"
